@@ -2,7 +2,7 @@
 
 This document describes the current status and the upcoming milestones of the IPFS project.
 
-*Updated: Tue, 30 Aug 2016 15:20:47 GMT*
+*Updated: Tue, 30 Aug 2016 15:48:48 GMT*
 
 ## orbit
 
@@ -95,8 +95,8 @@ This document describes the current status and the upcoming milestones of the IP
 | Status | Milestone | Goals | ETA |
 | :---: | :--- | :---: | :---: |
 | 🚀| **[js-go interoperability](#js-go-interoperability)**| 0 / 1| Fri Aug 26 2016|
-| 🚀| **[ipfs-0.4.3-rc4](#ipfs-0.4.3-rc4)**| 2 / 8| Wed Aug 31 2016|
-| 🚀| **[ipfs 0.4.4](#ipfs-0.4.4)**| 1 / 3| Wed Sep 07 2016|
+| 🚀| **[ipfs-0.4.3-rc4](#ipfs-0.4.3-rc4)**| 2 / 9| Wed Aug 31 2016|
+| 🚀| **[ipfs 0.4.4](#ipfs-0.4.4)**| 1 / 2| Wed Sep 07 2016|
 | 🚀| **[ipld integration](#ipld-integration)**| 0 / 3| Fri Sep 09 2016|
 
 #### js-go interoperability
@@ -114,10 +114,11 @@ This document describes the current status and the upcoming milestones of the IP
 
 > 
 
-🚀 &nbsp;**OPEN** &nbsp;&nbsp;📉 &nbsp;&nbsp;**2 / 8** goals completed **(25%)** &nbsp;&nbsp;📅 &nbsp;&nbsp;**Wed Aug 31 2016**
+🚀 &nbsp;**OPEN** &nbsp;&nbsp;📉 &nbsp;&nbsp;**2 / 9** goals completed **(22%)** &nbsp;&nbsp;📅 &nbsp;&nbsp;**Wed Aug 31 2016**
 
 | Status | Goal | Labels | Repository |
 | :---: | :--- | --- | --- |
+| ❌ | [Improve error messages during auto-migrations](https://github.com/ipfs/go-ipfs/pull/3154) |`in progress`| <a href=https://github.com/ipfs/go-ipfs>ipfs/go-ipfs</a> |
 | ❌ | [Enhance tests for files API root best-effort pin.](https://github.com/ipfs/go-ipfs/pull/3151) |`in progress`| <a href=https://github.com/ipfs/go-ipfs>ipfs/go-ipfs</a> |
 | ✔ | [Improve sharness testing on ipfs repo verify](https://github.com/ipfs/go-ipfs/pull/3148) | | <a href=https://github.com/ipfs/go-ipfs>ipfs/go-ipfs</a> |
 | ❌ | [test: revert few stdin tests that were removed](https://github.com/ipfs/go-ipfs/pull/3144) |`needs review`| <a href=https://github.com/ipfs/go-ipfs>ipfs/go-ipfs</a> |
@@ -132,13 +133,12 @@ This document describes the current status and the upcoming milestones of the IP
 
 > Version 0.4.4 of go-ipfs
 
-🚀 &nbsp;**OPEN** &nbsp;&nbsp;📉 &nbsp;&nbsp;**1 / 3** goals completed **(33%)** &nbsp;&nbsp;📅 &nbsp;&nbsp;**Wed Sep 07 2016**
+🚀 &nbsp;**OPEN** &nbsp;&nbsp;📉 &nbsp;&nbsp;**1 / 2** goals completed **(50%)** &nbsp;&nbsp;📅 &nbsp;&nbsp;**Wed Sep 07 2016**
 
 | Status | Goal | Labels | Repository |
 | :---: | :--- | --- | --- |
 | ❌ | [blockstore: rename RuntimeHashing to HashOnRead](https://github.com/ipfs/go-ipfs/pull/3143) |`in progress`, `needs review`| <a href=https://github.com/ipfs/go-ipfs>ipfs/go-ipfs</a> |
 | ✔ | [deps: move go-is-domain to gx](https://github.com/ipfs/go-ipfs/pull/3077) |`RFM`| <a href=https://github.com/ipfs/go-ipfs>ipfs/go-ipfs</a> |
-| ❌ | [Hit ~80% code coverage on all packages in this repo](https://github.com/ipfs/go-ipfs/issues/3053) |`difficulty:easy`, `help wanted`, `testing`| <a href=https://github.com/ipfs/go-ipfs>ipfs/go-ipfs</a> |
 
 
 #### ipld integration

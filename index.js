@@ -35,8 +35,9 @@ if(!token) {
 }
 
 // Should we generate a list goals for each milestone
-const detailedRoadmap = !(process.argv[process.argv.length-1] === 'false')
+const detailedRoadmap = !(process.argv[process.argv.length-3] === 'false')
 const includeMilestoneSummary = !(process.argv[process.argv.length-2] === 'false')
+const useVisualProgressBars = !(process.argv[process.argv.length-1] === 'false')
 
 const client = new GitHub({ token: token })
 
@@ -119,17 +120,26 @@ function getAllMilestoneIssues(client, project) {
   })
 }
 
-function generateMilestonesSummary(project) {
+function generateMilestonesSummary(project, options) {
+  let opts = options || { useVisualProgressBars: false }
+
   let str = `#### Milestone Summary\n\n`
   str += `| Status | Milestone | Goals | ETA |\n`
   str += `| :---: | :--- | :---: | :---: |\n`
 
   str += Object.keys(project.milestones).map((k, i) => {
     const m = project.milestones[k]
+    const progressPercentage = Math.floor((m.closed_issues / (Math.max(m.closed_issues + m.open_issues, 1))) * 100)
+
     let milestone = ''
     milestone += `| ${(m.state === 'open' ? symbols.open : symbols.closed)}`
     milestone += `| **[${m.title}](#${nameToAnchor(m.title)})**`
-    milestone += `| ${m.closed_issues} / ${m.total_issues}`
+
+    if(opts.useVisualProgressBars)
+      milestone += `| ![Progress](http://progressed.io/bar/${progressPercentage})`
+    else
+      milestone += `| ${m.closed_issues} / ${m.total_issues}`
+
     milestone += `| ${new Date(m.due_on).toDateString()}`
     milestone += `|\n`
     return milestone
@@ -140,7 +150,7 @@ function generateMilestonesSummary(project) {
 }
 
 function dataToMarkdown(projects, options) {
-  let opts = options || { listGoalsPerMilestone: false, displayProjectName: true }
+  let opts = options || { listGoalsPerMilestone: false, displayProjectName: true, useVisualProgressBars: false }
 
   const res = projects.map((project) => {
     let str = opts.displayProjectName ? `## ${project.name}\n\n` : ''
@@ -151,7 +161,7 @@ function dataToMarkdown(projects, options) {
 
     // Milestone summary
     if (opts.includeMilestoneSummary) {
-      str += generateMilestonesSummary(project)
+      str += generateMilestonesSummary(project, options)
     }
 
     // Milestones header
@@ -249,7 +259,8 @@ Promise.all(projects.map((project, i) => generateMilestonesListForProject(client
     const output = dataToMarkdown(final, {
       listGoalsPerMilestone: detailedRoadmap,
       displayProjectName: projects.length > 1,
-      includeMilestoneSummary: includeMilestoneSummary
+      includeMilestoneSummary: includeMilestoneSummary,
+      useVisualProgressBars: useVisualProgressBars
     })
     console.log(output)
   })
