@@ -2,7 +2,7 @@
 
 This document describes the current status and the upcoming milestones of the IPFS project.
 
-*Updated: Tue, 30 Aug 2016 21:07:09 GMT*
+*Updated: Tue, 30 Aug 2016 21:14:51 GMT*
 
 ## IPFS
 

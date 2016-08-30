@@ -12,43 +12,35 @@ cd roadmap-generator
 npm install
 ```
 
-## Setup 
-
-Edit `projects.js` to suit your needs. `projects.js` returns an array of objects from which the roadmap will be generated from. You can define a project like this:
-
-```javascript
-{
-  name: "orbit",
-  repos: [
-    "haadcode/orbit",    // first repo is considered the main repo
-    "haadcode/orbit-db",
-    "haadcode/ipfs-log",
-  ]
-}
-```
-
 ## Usage
 
 *You need a [Github API token](https://help.github.com/articles/creating-an-access-token-for-command-line-use/) to run `roadmap-generator`*
 
-Run `roadmap-generator` with:
-
 ```
-node index <github api token>
+Usage: index.js <file> <GITHUB_TOKEN> [options]
+
+By default GITHUB_TOKEN is read from env variable.
+
+Options:
+  -g, --goals         Include milestone goals in the roadmap           [boolean]
+  -s, --summary       Include milestone summaries in the roadmap       [boolean]
+  -p, --progressBars  Show progress with images instead of text
+  -l, --log           Log level: DEBUG|ERROR                  [default: "ERROR"]
+  -h, --help          Show help                                        [boolean]
+
+Examples:
+  index.js roadmap.conf.js               Output a generated roadmap
+  index.js roadmap.conf.js > ROADMAP.md  Output the generated roadmap to
+                                         ROADMAP.md
+  index.js roadmap.conf.js -gs           Generate detailed roadmap
 ```
 
-This will output the generated roadmap to the `stdout`. 
-
-Alternatively, export `GITHUB_TOKEN` with:
-
+Set `GITHUB_TOKEN` environment variable with:
 ```
-export GITHUB_TOKEN=<your token>
+export GITHUB_TOKEN=<token>
 ```
 
-And run `roadmap-generator` with:
-
+## Example
 ```
-node index  > ROADMAP.md
+node index.js example/ipfs.conf.js -gs > example/ROADMAP.md
 ```
-
-This will output the generated roadmap to a file `ROADMAP.md`
