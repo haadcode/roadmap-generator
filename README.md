@@ -34,12 +34,10 @@ Edit `projects.js` to suit your needs. `projects.js` returns an array of objects
 Run `roadmap-generator` with:
 
 ```
-node index <github api token> <true|false>
+node index <github api token>
 ```
 
 This will output the generated roadmap to the `stdout`. 
-
-The last argument `<true|false>` is *optional* and defines whether each milestone will list its goals. Default is `true`, ie. milestones will include their goals in the generated roadmap.
 
 Alternatively, export `GITHUB_TOKEN` with:
 

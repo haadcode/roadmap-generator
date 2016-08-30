@@ -1,46 +1,80 @@
 'use strict'
 
 const _ = require('lodash')
+const moment = require('moment')
+require('moment-range')
 const GitHub = require('octocat')
 const Logger = require('logplease')
 const logger = Logger.create("roadmap-generator", { color: Logger.Colors.Green })
 require('logplease').setLogLevel('ERROR')
 
+// Projects configuration
+const conf = require('./projects')
+const projects = conf.projects
+const organization = conf.organization
+const milestonesStartDate = conf.milestonesStartDate
+const milestonesEndDate = conf.milestonesEndDate
+
+// Visuals configuration
+const symbols = {
+  done: '✔', // or ✅
+  notDone: '❌',
+  open: '🚀', // or 🔔
+  closed: '⭐',
+  progress: '📉',
+  date: '📅',
+}
+
 // Github token
 const token = process.env.GITHUB_TOKEN || process.argv[2]
 if(!token) {
-  console.error("Error: GITHUB_TOKEN not define!")
+  console.error("Error: GITHUB_TOKEN not defined!")
   console.error("Please use environment variable 'GITHUB_TOKEN' to provide a token or run roadmap-generator with")
   console.error("roadmap-generator <github api token>")
   process.exit(1)
 }
 
+// Should we generate a list goals for each milestone
 const detailedRoadmap = !(process.argv[process.argv.length-1] === 'false')
-
-// Project configuration
-const projects = require('./projects')
+const includeMilestoneSummary = !(process.argv[process.argv.length-2] === 'false')
 
 const client = new GitHub({ token: token })
+
+const nameToAnchor = (name) => name.split(' ').join('-').toLowerCase()
 
 function generateMilestonesListForProject(client, project) {
   logger.log(`Generate milestones list for ${project.name}`)
   let res = _.cloneDeep(project)
   return Promise.all(project.repos.map((repo) => {
     logger.log(`    Get milestones from ${repo}`)
-    return client.get('/repos/' + repo + '/milestones', { state: 'open' })
-      .then((res) => {
-        return res.body.map((e) => e)
-      })
+    return client.get('/repos/' + repo + '/milestones', {
+      state: 'all',
+      sort: 'due_on',
+      direction: 'asc'
+    })
+    .then((res) => res.body)
   }))
   .then((results) => {
     let milestones = {}
-    _.uniq(_.flatten(results)).forEach((e) => {
-      milestones[e.title] = {
-        title: e.title,
-        description: e.description,
-        due_on: e.due_on,
-        html_url: e.html_url,
-        issues: [],
+    // Sort milestones: open ones first (next due date fist), then closed milestones
+    let sorted = _.uniq(_.flatten(results))
+    sorted = _.orderBy(sorted, ["state", "due_on"], ["desc", "asc"])
+
+    sorted.forEach((e) => {
+      // Filter out milestones that are not within given date range
+      const startDate = moment.utc(milestonesStartDate)
+      const endDate = moment.utc(milestonesEndDate)
+      const range = moment.range(startDate, endDate)
+      const due = moment.utc(e.due_on)
+      if(due.within(range)) {
+        milestones[e.title] = {
+          title: e.title,
+          description: e.description,
+          due_on: e.due_on,
+          html_url: e.html_url,
+          state: e.state,
+          issues: [],
+        }
       }
     })
     return milestones
@@ -56,7 +90,7 @@ function getAllMilestoneIssues(client, project) {
   let result = _.cloneDeep(project)
   return Promise.all(project.repos.map((repo) => {
     logger.log(`    Get issues from ${repo}`)
-    return client.get('/repos/' + repo + '/issues', { state: 'all', per_page: '2000' })
+    return client.get('/repos/' + repo + '/issues', { state: 'all', per_page: '20000' })
       .then((res) => {
         const issues = res.body
         logger.log(`    Found ${issues.length} issues in ${repo}`)
@@ -85,29 +119,65 @@ function getAllMilestoneIssues(client, project) {
   })
 }
 
-function dataToMarkdown(projects, options) {
-  let opts = options || { listGoalsPerMilestone: false }
+function generateMilestonesSummary(project) {
+  let str = `#### Milestone Summary\n\n`
+  str += `| Status | Milestone | Goals | ETA |\n`
+  str += `| :---: | :--- | :---: | :---: |\n`
 
-  const res = projects.map((e) => {
-    let str = `### ${e.name}\n\n`
-    str += Object.keys(e.milestones).map((k, i) => {
-      let m = e.milestones[k]
+  str += Object.keys(project.milestones).map((k, i) => {
+    const m = project.milestones[k]
+    let milestone = ''
+    milestone += `| ${(m.state === 'open' ? symbols.open : symbols.closed)}`
+    milestone += `| **[${m.title}](#${nameToAnchor(m.title)})**`
+    milestone += `| ${m.closed_issues} / ${m.total_issues}`
+    milestone += `| ${new Date(m.due_on).toDateString()}`
+    milestone += `|\n`
+    return milestone
+  }).join('')
+  str += '\n'
+
+  return str
+}
+
+function dataToMarkdown(projects, options) {
+  let opts = options || { listGoalsPerMilestone: false, displayProjectName: true }
+
+  const res = projects.map((project) => {
+    let str = opts.displayProjectName ? `## ${project.name}\n\n` : ''
+
+    // Status section
+    if (project.links && project.links.status)
+      str += project.links.status
+
+    // Milestone summary
+    if (opts.includeMilestoneSummary) {
+      str += generateMilestonesSummary(project)
+    }
+
+    // Milestones header
+    if (!opts.displayProjectName)
+      str += "### Milestones and Goals\n\n"
+
+    // Milestones for the project
+    str += Object.keys(project.milestones).map((k, i) => {
+      let m = project.milestones[k]
       const progressPercentage = Math.floor((m.closed_issues / (Math.max(m.closed_issues + m.open_issues, 1))) * 100)
       const t = m.html_url.split('/')
       t.pop()
       t.pop()
-      // let status = `[Status](${t.join('/') + "/issues?q=milestone" + encodeURI(":\"" + m.title + "\"")})`
-      let milestone = `#### ${i + 1}. ${m.title}\n\n`
+
+      let milestone = `#### ${m.title}\n\n`
       milestone += `> ${m.description}\n\n`
 
-      milestone += `📉 &nbsp;&nbsp;**${m.closed_issues} / ${m.total_issues}** goals completed **(${progressPercentage}%)** &nbsp;&nbsp;`
-      milestone += `📅 &nbsp;&nbsp;**${new Date(m.due_on).toDateString()}**\n\n`
+      milestone += (m.state === 'open' ? symbols.open : symbols.closed) + ` &nbsp;**${m.state.toUpperCase()}** &nbsp;&nbsp;`
+      milestone += `${symbols.progress} &nbsp;&nbsp;**${m.closed_issues} / ${m.total_issues}** goals completed **(${progressPercentage}%)** &nbsp;&nbsp;`
+      milestone += `${symbols.date} &nbsp;&nbsp;**${new Date(m.due_on).toDateString()}**\n\n`
 
       if(opts.listGoalsPerMilestone) {
         milestone += `| Status | Goal | Labels | Repository |\n`
         milestone += `| :---: | :--- | --- | --- |\n`
         milestone += m.issues.map((issue, idx) => {
-          let text = `| ${issue.state === 'open' ? '❌ ' : '✅ '}`
+          let text = `| ${issue.state === 'open' ? symbols.notDone : symbols.done} `
           text += `| [${issue.title}](${issue.html_url}) `
           text += issue.labels.length > 0 ? `|` + issue.labels.map((label) => `\`${label.name}\``).join(', ') : "| "
           text += `| <a href=https://github.com/${issue.repo}>${issue.repo}</a> |\n`
@@ -115,6 +185,7 @@ function dataToMarkdown(projects, options) {
         }).join('') + '\n'
       }
 
+      milestone += `\n`
       return milestone
     }).join('')
 
@@ -139,15 +210,13 @@ function generateMilestoneProgress(project) {
 }
 
 function generateTableOfContents(projects) {
-  const normalizeName = (name) => name.split(' ').join('-').toLowerCase()
-
   let res = ''
   res += projects.map((e, i) => {
-    let str = `${i + 1}. [${e.name}](${normalizeName(e.name)})\n`
+    let str = `${i + 1}. [${e.name}](${nameToAnchor(e.name)})\n`
     str += e.milestones
       ? Object.keys(e.milestones).map((k) => {
         const m = e.milestones[k]
-        return `  - [${m.title}](${normalizeName(m.title)})\n`
+        return `  - [${m.title}](${nameToAnchor(m.title)})\n`
       }).join('')
       : ''
 
@@ -162,9 +231,9 @@ Promise.all(projects.map((project, i) => generateMilestonesListForProject(client
   .then((projectsWithIssues) => projectsWithIssues.map((project) => generateMilestoneProgress(project)))
   .then((final) => {
     /* FINAL OUTPUT */
-    console.log("# IPFS Roadmap")
+    console.log(`# ${organization} - Roadmap`)
     console.log("")
-    console.log("This document gathers the roadmaps of all projects in the IPFS organization.")
+    console.log(`This document describes the current status and the upcoming milestones of the ${organization} project.`)
     console.log("")
     console.log(`*Updated: ${new Date().toUTCString()}*`)
     console.log("")
@@ -172,12 +241,16 @@ Promise.all(projects.map((project, i) => generateMilestonesListForProject(client
     // console.log("## Table of Contents\n")
     // console.log(generateTableOfContents(projectsWithIssues))
 
-    console.log("## Projects")
-    console.log("")
-    final.forEach((project) => console.log(`- [${project.name}](#${project.name})`))
-    console.log("")
+    // console.log("## Projects")
+    // console.log("")
+    // final.forEach((project) => console.log(`- [${project.name}](#${project.name})`))
+    // console.log("")
 
-    console.log("## Roadmap")
-    console.log(dataToMarkdown(final, { listGoalsPerMilestone: detailedRoadmap }))
+    const output = dataToMarkdown(final, {
+      listGoalsPerMilestone: detailedRoadmap,
+      displayProjectName: projects.length > 1,
+      includeMilestoneSummary: includeMilestoneSummary
+    })
+    console.log(output)
   })
   .catch((e) => console.error(e))
