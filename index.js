@@ -22,9 +22,9 @@ const argv = require('yargs')
     .describe('l', 'Log level: DEBUG|ERROR')
     .default('l', 'ERROR')
     .nargs('l', 1)
-    .example('$0 roadmap.conf.js', 'Output a generated roadmap\n')
-    .example('$0 roadmap.conf.js > ROADMAP.md', 'Output the generated roadmap to ROADMAP.md\n')
-    .example('$0 roadmap.conf.js -gs', 'Include milestone summaries and milestone goals in the roadmap')
+    .example('$0 roadmap.conf.js', 'Output a generated roadmap')
+    .example('$0 roadmap.conf.js > ROADMAP.md', 'Output the generated roadmap to ROADMAP.md')
+    .example('$0 roadmap.conf.js -gs', 'Generate detailed roadmap')
     .help('h')
     .alias('h', 'help')
     .describe('h', 'Show help')
@@ -61,7 +61,7 @@ const symbols = {
 // Github token
 const token = process.env.GITHUB_TOKEN || argv._[1] || null
 if(!token) {
-  console.error("Error: GITHUB_TOKEN not provided!")
+  logger.error("Error: GITHUB_TOKEN not provided!")
   process.exit(1)
 }
 
@@ -300,4 +300,4 @@ Promise.all(projects.map((project, i) => getMilestonesListForProject(client, pro
     })
     console.log(output)
   })
-  .catch((e) => console.error(e))
+  .catch((e) => logger.error(e))
