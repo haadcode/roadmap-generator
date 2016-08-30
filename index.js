@@ -15,6 +15,8 @@ if(!token) {
   process.exit(1)
 }
 
+const detailedRoadmap = !(process.argv[process.argv.length-1] === 'false')
+
 // Project configuration
 const projects = require('./projects')
 
@@ -176,6 +178,6 @@ Promise.all(projects.map((project, i) => generateMilestonesListForProject(client
     console.log("")
 
     console.log("## Roadmap")
-    console.log(dataToMarkdown(final, { listGoalsPerMilestone: true }))
+    console.log(dataToMarkdown(final, { listGoalsPerMilestone: detailedRoadmap }))
   })
   .catch((e) => console.error(e))

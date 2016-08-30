@@ -4,6 +4,7 @@
 
 *Currently uses Github Milestones as milestones and Github Issues as goals*
 
+Check the [example roadmap](https://github.com/haadcode/roadmap-generator/blob/master/example/ROADMAP.md#ipfs-roadmap)
 ## Install
 ```
 git clone https://github.com/haadcode/roadmap-generator
@@ -33,10 +34,12 @@ Edit `projects.js` to suit your needs. `projects.js` returns an array of objects
 Run `roadmap-generator` with:
 
 ```
-node index <github api token>
+node index <github api token> <true|false>
 ```
 
 This will output the generated roadmap to the `stdout`. 
+
+The last argument `<true|false>` is *optional* and defines whether each milestone will list its goals. Default is `true`, ie. milestones will include their goals in the generated roadmap.
 
 Alternatively, export `GITHUB_TOKEN` with:
 
@@ -47,7 +50,7 @@ export GITHUB_TOKEN=<your token>
 And run `roadmap-generator` with:
 
 ```
-node index > ROADMAP.md
+node index  > ROADMAP.md
 ```
 
 This will output the generated roadmap to a file `ROADMAP.md`
