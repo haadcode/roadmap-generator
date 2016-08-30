@@ -2,7 +2,7 @@
 
 This document describes the current status and the upcoming milestones of the IPFS project.
 
-*Updated: Tue, 30 Aug 2016 15:48:48 GMT*
+*Updated: Tue, 30 Aug 2016 15:52:49 GMT*
 
 ## orbit
 
@@ -10,10 +10,10 @@ This document describes the current status and the upcoming milestones of the IP
 
 | Status | Milestone | Goals | ETA |
 | :---: | :--- | :---: | :---: |
-| 🚀| **[Integrate Orbit with uPort](#integrate-orbit-with-uport)**| 1 / 4| Fri Sep 16 2016|
-| 🚀| **[Improve Orbit's and orbit-db's documentation and developer experience](#improve-orbit's-and-orbit-db's-documentation-and-developer-experience)**| 8 / 22| Sat Sep 24 2016|
-| 🚀| **[Orbit with IPFS Pubsub](#orbit-with-ipfs-pubsub)**| 0 / 1| Wed Sep 28 2016|
-| ⭐| **[Fix Orbit](#fix-orbit)**| 6 / 6| Fri Aug 12 2016|
+| 🚀| **[Integrate Orbit with uPort](#integrate-orbit-with-uport)**| ![Progress](http://progressed.io/bar/25)| Fri Sep 16 2016|
+| 🚀| **[Improve Orbit's and orbit-db's documentation and developer experience](#improve-orbit's-and-orbit-db's-documentation-and-developer-experience)**| ![Progress](http://progressed.io/bar/36)| Sat Sep 24 2016|
+| 🚀| **[Orbit with IPFS Pubsub](#orbit-with-ipfs-pubsub)**| ![Progress](http://progressed.io/bar/0)| Wed Sep 28 2016|
+| ⭐| **[Fix Orbit](#fix-orbit)**| ![Progress](http://progressed.io/bar/100)| Fri Aug 12 2016|
 
 #### Integrate Orbit with uPort
 
@@ -94,10 +94,10 @@ This document describes the current status and the upcoming milestones of the IP
 
 | Status | Milestone | Goals | ETA |
 | :---: | :--- | :---: | :---: |
-| 🚀| **[js-go interoperability](#js-go-interoperability)**| 0 / 1| Fri Aug 26 2016|
-| 🚀| **[ipfs-0.4.3-rc4](#ipfs-0.4.3-rc4)**| 2 / 9| Wed Aug 31 2016|
-| 🚀| **[ipfs 0.4.4](#ipfs-0.4.4)**| 1 / 2| Wed Sep 07 2016|
-| 🚀| **[ipld integration](#ipld-integration)**| 0 / 3| Fri Sep 09 2016|
+| 🚀| **[js-go interoperability](#js-go-interoperability)**| ![Progress](http://progressed.io/bar/0)| Fri Aug 26 2016|
+| 🚀| **[ipfs-0.4.3-rc4](#ipfs-0.4.3-rc4)**| ![Progress](http://progressed.io/bar/22)| Wed Aug 31 2016|
+| 🚀| **[ipfs 0.4.4](#ipfs-0.4.4)**| ![Progress](http://progressed.io/bar/50)| Wed Sep 07 2016|
+| 🚀| **[ipld integration](#ipld-integration)**| ![Progress](http://progressed.io/bar/0)| Fri Sep 09 2016|
 
 #### js-go interoperability
 
