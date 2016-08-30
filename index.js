@@ -1,63 +1,90 @@
 'use strict'
 
 const _ = require('lodash')
+const Promise = require('bluebird')
 const moment = require('moment')
 require('moment-range')
 const GitHub = require('octocat')
+
+// Setup command line options
+const argv = require('yargs')
+    .usage('Usage: $0 <file> <GITHUB_TOKEN> [options]\n\nBy default GITHUB_TOKEN is read from env variable.')
+    .demand(1)
+    .boolean('g')
+    .alias('g', 'goals')
+    .describe('g', 'Include milestone goals in the roadmap')
+    .boolean('s')
+    .alias('s', 'summary')
+    .describe('s', 'Include milestone summaries in the roadmap')
+    .alias('p', 'progressBars')
+    .describe('p', 'Show progress with images instead of text')
+    .alias('l', 'log')
+    .describe('l', 'Log level: DEBUG|ERROR')
+    .default('l', 'ERROR')
+    .nargs('l', 1)
+    .example('$0 roadmap.conf.js', 'Output a generated roadmap\n')
+    .example('$0 roadmap.conf.js > ROADMAP.md', 'Output the generated roadmap to ROADMAP.md\n')
+    .example('$0 roadmap.conf.js -gs', 'Include milestone summaries and milestone goals in the roadmap')
+    .help('h')
+    .alias('h', 'help')
+    .describe('h', 'Show help')
+    .argv
+
+// Setup logging
 const Logger = require('logplease')
 const logger = Logger.create("roadmap-generator", { color: Logger.Colors.Green })
-require('logplease').setLogLevel('ERROR')
+require('logplease').setLogLevel(argv.log || 'ERROR')
 
 // Projects configuration
-const conf = require('./projects')
-const projects = conf.projects
-const organization = conf.organization
-const milestonesStartDate = conf.milestonesStartDate
-const milestonesEndDate = conf.milestonesEndDate
+const roadmap = require('./' + argv._[0])
+// TODO make sure these exist
+const projects = roadmap.projects
+const organization = roadmap.organization
+const milestonesStartDate = roadmap.milestonesStartDate || moment.now()
+const milestonesEndDate = roadmap.milestonesEndDate || moment.now()
 
 // Visuals configuration
 const symbols = {
-  done: '✔', // or ✅
-  notDone: '❌',
-  open: '🚀', // or 🔔
-  closed: '⭐',
-  progress: '📉',
-  date: '📅',
+  // Issue status
+  done: '✔', // or ✅ or '**DONE**'
+  notDone: '❌', // or 'OPEN'
+  // Milestone status
+  open: '🚀', // or 🔔 or ''
+  closed: '⭐', // or ''
+  // Milestone details
+  progress: '📉', // or 'Progress'
+  date: '📅', // or 'Estimated Completion'
 }
 
+/* GITHUB */
+
 // Github token
-const token = process.env.GITHUB_TOKEN || process.argv[2]
+const token = process.env.GITHUB_TOKEN || argv._[1] || null
 if(!token) {
-  console.error("Error: GITHUB_TOKEN not defined!")
-  console.error("Please use environment variable 'GITHUB_TOKEN' to provide a token or run roadmap-generator with")
-  console.error("roadmap-generator <github api token>")
+  console.error("Error: GITHUB_TOKEN not provided!")
   process.exit(1)
 }
 
-// Should we generate a list goals for each milestone
-const detailedRoadmap = !(process.argv[process.argv.length-3] === 'false')
-const includeMilestoneSummary = !(process.argv[process.argv.length-2] === 'false')
-const useVisualProgressBars = !(process.argv[process.argv.length-1] === 'false')
-
+// Github API client
 const client = new GitHub({ token: token })
 
-const nameToAnchor = (name) => name.split(' ').join('-').toLowerCase()
+/* Github data transformation functions */
 
-function generateMilestonesListForProject(client, project) {
-  logger.log(`Generate milestones list for ${project.name}`)
+function getMilestonesListForProject(client, project) {
+  logger.log(`-- Generate milestones list for '${project.name}' --`)
   let res = _.cloneDeep(project)
-  return Promise.all(project.repos.map((repo) => {
-    logger.log(`    Get milestones from ${repo}`)
+  return Promise.map(project.repos, (repo) => {
+    logger.log(`Get milestones from ${repo}`)
     return client.get('/repos/' + repo + '/milestones', {
       state: 'all',
       sort: 'due_on',
       direction: 'asc'
     })
     .then((res) => res.body)
-  }))
+  }, { concurrency: 16 })
   .then((results) => {
     let milestones = {}
-    // Sort milestones: open ones first (next due date fist), then closed milestones
+    // Sort milestones: open ones first (next due date first), then closed milestones
     let sorted = _.uniq(_.flatten(results))
     sorted = _.orderBy(sorted, ["state", "due_on"], ["desc", "asc"])
 
@@ -87,17 +114,17 @@ function generateMilestonesListForProject(client, project) {
 }
 
 function getAllMilestoneIssues(client, project) {
-  logger.log(`Generate issues list for ${project.name}`)
+  logger.log(`-- Generate issues list for '${project.name}' --`)
   let result = _.cloneDeep(project)
-  return Promise.all(project.repos.map((repo) => {
-    logger.log(`    Get issues from ${repo}`)
+  return Promise.map(project.repos, (repo) => {
+    logger.log(`Get issues from ${repo}`)
     return client.get('/repos/' + repo + '/issues', { state: 'all', per_page: '20000' })
       .then((res) => {
         const issues = res.body
-        logger.log(`    Found ${issues.length} issues in ${repo}`)
+        logger.log(`Found ${issues.length} issues in ${repo}`)
         return { repo: repo, issues: issues }
       })
-  }))
+  }, { concurrency: 16 })
   .then((res) => {
     res.forEach((repo) => {
       repo.issues.forEach((e) => {
@@ -120,6 +147,25 @@ function getAllMilestoneIssues(client, project) {
   })
 }
 
+function getMilestoneProgress(project) {
+  let res = _.cloneDeep(project);
+  res.milestones = Object.keys(project.milestones).map((k) => {
+    let ms = _.cloneDeep(project.milestones[k])
+    let total = ms.issues.length
+    let open = ms.issues.filter((b) => b.state === 'open').length
+    let closed = ms.issues.filter((b) => b.state !== 'open').length
+    ms.open_issues = open
+    ms.total_issues = total
+    ms.closed_issues = closed
+    return ms
+  })
+  return res
+}
+
+/* Markdown output functions */
+
+const nameToAnchor = (name) => name.split(' ').join('-').toLowerCase()
+
 function generateMilestonesSummary(project, options) {
   let opts = options || { useVisualProgressBars: false }
 
@@ -132,15 +178,15 @@ function generateMilestonesSummary(project, options) {
     const progressPercentage = Math.floor((m.closed_issues / (Math.max(m.closed_issues + m.open_issues, 1))) * 100)
 
     let milestone = ''
-    milestone += `| ${(m.state === 'open' ? symbols.open : symbols.closed)}`
-    milestone += `| **[${m.title}](#${nameToAnchor(m.title)})**`
+    milestone += `| ${(m.state === 'open' ? symbols.open : symbols.closed)} `
+    milestone += `| **[${m.title}](#${nameToAnchor(m.title)})** `
 
     if(opts.useVisualProgressBars)
-      milestone += `| ![Progress](http://progressed.io/bar/${progressPercentage})`
+      milestone += `| ![Progress](http://progressed.io/bar/${progressPercentage}) `
     else
-      milestone += `| ${m.closed_issues} / ${m.total_issues}`
+      milestone += `| ${m.closed_issues} / ${m.total_issues} `
 
-    milestone += `| ${new Date(m.due_on).toDateString()}`
+    milestone += `| ${new Date(m.due_on).toDateString()} `
     milestone += `|\n`
     return milestone
   }).join('')
@@ -166,7 +212,7 @@ function dataToMarkdown(projects, options) {
 
     // Milestones header
     if (!opts.displayProjectName)
-      str += "### Milestones and Goals\n\n"
+      str += "## Milestones and Goals\n\n"
 
     // Milestones for the project
     str += Object.keys(project.milestones).map((k, i) => {
@@ -183,7 +229,7 @@ function dataToMarkdown(projects, options) {
       milestone += `${symbols.progress} &nbsp;&nbsp;**${m.closed_issues} / ${m.total_issues}** goals completed **(${progressPercentage}%)** &nbsp;&nbsp;`
       milestone += `${symbols.date} &nbsp;&nbsp;**${new Date(m.due_on).toDateString()}**\n\n`
 
-      if(opts.listGoalsPerMilestone) {
+      if (opts.listGoalsPerMilestone) {
         milestone += `| Status | Goal | Labels | Repository |\n`
         milestone += `| :---: | :--- | --- | --- |\n`
         milestone += m.issues.map((issue, idx) => {
@@ -204,21 +250,7 @@ function dataToMarkdown(projects, options) {
   return res.join('')
 }
 
-function generateMilestoneProgress(project) {
-  let res = _.cloneDeep(project);
-  res.milestones = Object.keys(project.milestones).map((k) => {
-    let ms = _.cloneDeep(project.milestones[k])
-    let total = ms.issues.length
-    let open = ms.issues.filter((b) => b.state === 'open').length
-    let closed = ms.issues.filter((b) => b.state !== 'open').length
-    ms.open_issues = open
-    ms.total_issues = total
-    ms.closed_issues = closed
-    return ms
-  })
-  return res
-}
-
+// WIP
 function generateTableOfContents(projects) {
   let res = ''
   res += projects.map((e, i) => {
@@ -236,11 +268,15 @@ function generateTableOfContents(projects) {
   return res
 }
 
-Promise.all(projects.map((project, i) => generateMilestonesListForProject(client, project)))
+/* Main */
+
+Promise.all(projects.map((project, i) => getMilestonesListForProject(client, project)))
   .then((res) => Promise.all(res.map((e) => getAllMilestoneIssues(client, e))))
-  .then((projectsWithIssues) => projectsWithIssues.map((project) => generateMilestoneProgress(project)))
+  .then((projectsWithIssues) => projectsWithIssues.map((project) => getMilestoneProgress(project)))
   .then((final) => {
     /* FINAL OUTPUT */
+    logger.debug("Output:")
+
     console.log(`# ${organization} - Roadmap`)
     console.log("")
     console.log(`This document describes the current status and the upcoming milestones of the ${organization} project.`)
@@ -257,10 +293,10 @@ Promise.all(projects.map((project, i) => generateMilestonesListForProject(client
     // console.log("")
 
     const output = dataToMarkdown(final, {
-      listGoalsPerMilestone: detailedRoadmap,
       displayProjectName: projects.length > 1,
-      includeMilestoneSummary: includeMilestoneSummary,
-      useVisualProgressBars: useVisualProgressBars
+      listGoalsPerMilestone: argv.goals,
+      includeMilestoneSummary: argv.summary,
+      useVisualProgressBars: argv.progressBars,
     })
     console.log(output)
   })
