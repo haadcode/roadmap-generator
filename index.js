@@ -239,6 +239,8 @@ function dataToMarkdown(projects, options) {
           text += `| <a href=https://github.com/${issue.repo}>${issue.repo}</a> |\n`
           return text
         }).join('') + '\n'
+      } else {
+        milestone += `See [milestone goals](https://waffle.io/${roadmap.targetRepo}?milestone=${encodeURIComponent(m.title)}) for the list of goals this milestone has.`
       }
 
       milestone += `\n`
