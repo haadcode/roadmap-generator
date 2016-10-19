@@ -1,6 +1,7 @@
 'use strict'
 
 const _ = require('lodash')
+const path = require('path')
 const Promise = require('bluebird')
 const moment = require('moment')
 require('moment-range')
@@ -36,7 +37,7 @@ const logger = Logger.create("roadmap-generator", { color: Logger.Colors.Green }
 require('logplease').setLogLevel(argv.log || 'ERROR')
 
 // Projects configuration
-const roadmap = require('./' + argv._[0])
+const roadmap = require(path.resolve(argv._[0]))
 // TODO make sure these exist
 const projects = roadmap.projects
 const organization = roadmap.organization
