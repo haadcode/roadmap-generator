@@ -44,3 +44,7 @@ export GITHUB_TOKEN=<token>
 ```
 node index.js example/ipfs.conf.js -gs > example/ROADMAP.md
 ```
+
+## License
+
+[MIT](LICENSE)
