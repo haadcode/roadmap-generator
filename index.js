@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 'use strict'
 
 const _ = require('lodash')
@@ -170,7 +172,7 @@ const nameToAnchor = (name) => name.split(' ').join('-').toLowerCase()
 function generateMilestonesSummary(project, options) {
   let opts = options || { useVisualProgressBars: false }
 
-  let str = `#### Milestone Summary\n\n`
+  let str = `## Milestone Summary\n\n`
   str += `| Status | Milestone | Goals | ETA |\n`
   str += `| :---: | :--- | :---: | :---: |\n`
 
@@ -223,8 +225,13 @@ function dataToMarkdown(projects, options) {
       t.pop()
       t.pop()
 
-      let milestone = `#### ${m.title}\n\n`
-      milestone += `> ${m.description}\n\n`
+      let milestone = `### ${m.title}\n\n`
+      const quotedDescription = m.description
+        .split('\n')
+        .map((line) => `> ${line}`)
+        .join('\n')
+        .trim()
+      milestone += `${quotedDescription}\n\n`
 
       milestone += (m.state === 'open' ? symbols.open : symbols.closed) + ` &nbsp;**${m.state.toUpperCase()}** &nbsp;&nbsp;`
       milestone += `${symbols.progress} &nbsp;&nbsp;**${m.closed_issues} / ${m.total_issues}** goals completed **(${progressPercentage}%)** &nbsp;&nbsp;`
