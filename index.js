@@ -172,7 +172,7 @@ const nameToAnchor = (name) => name.split(' ').join('-').toLowerCase()
 function generateMilestonesSummary(project, options) {
   let opts = options || { useVisualProgressBars: false }
 
-  let str = `#### Milestone Summary\n\n`
+  let str = `## Milestone Summary\n\n`
   str += `| Status | Milestone | Goals | ETA |\n`
   str += `| :---: | :--- | :---: | :---: |\n`
 
@@ -225,7 +225,7 @@ function dataToMarkdown(projects, options) {
       t.pop()
       t.pop()
 
-      let milestone = `#### ${m.title}\n\n`
+      let milestone = `### ${m.title}\n\n`
       milestone += `> ${m.description}\n\n`
 
       milestone += (m.state === 'open' ? symbols.open : symbols.closed) + ` &nbsp;**${m.state.toUpperCase()}** &nbsp;&nbsp;`
